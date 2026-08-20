@@ -24,7 +24,7 @@ export default function AttendanceScreen({ trainingId, onBack }) {
 
   useEffect(() => {
     setAttendance(trainingId, records);
-  }, [records]);
+  }, [records, trainingId, setAttendance]);
 
   function getStatus(playerId) {
     return records.find((r) => r.playerId === playerId)?.status ?? 'absent';
