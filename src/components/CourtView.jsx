@@ -1,5 +1,5 @@
 // volley-coach/src/components/CourtView.jsx
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useMatches } from '../contexts/MatchesContext';
 import { rotateCourt, emptyPlayerStats } from '../utils/stats';
 
@@ -33,6 +33,7 @@ export default function CourtView({ matchId, team, onBack }) {
   const [selectedAction, setSelectedAction] = useState(null);
   const [flash, setFlash] = useState(null); // position number that flashed
   const [setScore, setSetScore] = useState({ us: 0, them: 0 });
+  const flashTimer = useRef(null);
 
   function saveLineup() {
     updateMatch(matchId, () => ({ courtLineup: lineup }));
@@ -72,8 +73,9 @@ export default function CourtView({ matchId, team, onBack }) {
       return { liveStats: { ...m.liveStats, [playerId]: updated } };
     });
 
+    clearTimeout(flashTimer.current);
     setFlash(selectedPos);
-    setTimeout(() => setFlash(null), 400);
+    flashTimer.current = setTimeout(() => setFlash(null), 400);
     setSelectedPos(null);
     setSelectedAction(null);
   }
