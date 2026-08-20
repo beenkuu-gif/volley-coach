@@ -36,14 +36,12 @@ export default function CourtView({ matchId, team, onBack }) {
   const flashTimer = useRef(null);
 
   function saveLineup() {
-    updateMatch(matchId, () => ({ courtLineup: lineup }));
-    // Init liveStats for all assigned players
     updateMatch(matchId, (m) => {
       const stats = { ...m.liveStats };
       Object.values(lineup).forEach((pid) => {
         if (pid && !stats[pid]) stats[pid] = emptyPlayerStats();
       });
-      return { liveStats: stats };
+      return { courtLineup: lineup, liveStats: stats };
     });
     setSetupMode(false);
   }

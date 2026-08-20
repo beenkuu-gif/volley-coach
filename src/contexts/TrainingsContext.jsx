@@ -1,5 +1,5 @@
 // volley-coach/src/contexts/TrainingsContext.jsx
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const TrainingsContext = createContext(null);
@@ -8,15 +8,15 @@ export function TrainingsProvider({ children }) {
   const [trainings, setTrainings] = useLocalStorage('vc_trainings', []);
   const [attendances, setAttendances] = useLocalStorage('vc_attendances', []);
 
-  function addTraining(training) {
+  const addTraining = useCallback((training) => {
     setTrainings((prev) => [...prev, { ...training, id: crypto.randomUUID() }]);
-  }
+  }, [setTrainings]);
 
-  function getAttendance(trainingId) {
+  const getAttendance = useCallback((trainingId) => {
     return attendances.find((a) => a.trainingId === trainingId) || { trainingId, records: [] };
-  }
+  }, [attendances]);
 
-  function setAttendance(trainingId, records) {
+  const setAttendance = useCallback((trainingId, records) => {
     setAttendances((prev) => {
       const exists = prev.some((a) => a.trainingId === trainingId);
       if (exists) {
@@ -24,7 +24,7 @@ export function TrainingsProvider({ children }) {
       }
       return [...prev, { trainingId, records }];
     });
-  }
+  }, [setAttendances]);
 
   return (
     <TrainingsContext.Provider value={{ trainings, addTraining, getAttendance, setAttendance }}>
