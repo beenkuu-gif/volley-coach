@@ -41,7 +41,7 @@ export default function MatchDetail({ matchId, onBack }) {
   }
 
   const TABS = [
-    { id: 'live',    label: 'Live stats' },
+    { id: 'live',    label: 'Statystyki live' },
     { id: 'notes',   label: 'Notatki' },
     { id: 'summary', label: 'Podsumowanie' },
   ];
