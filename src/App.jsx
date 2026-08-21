@@ -21,7 +21,7 @@ const BASE_TABS = [
 ];
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [nav, setNav] = useState({ tab: 'drills', subScreen: null, params: {} });
 
   if (loading) {
@@ -59,6 +59,9 @@ export default function App() {
   return (
     <>
       {renderTab()}
+      <div style={{ position: 'fixed', bottom: 64, right: 12 }}>
+        <button onClick={logout} style={{ background: 'rgba(0,0,0,.3)', border: 'none', color: 'rgba(255,255,255,.4)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 11 }}>Wyloguj</button>
+      </div>
       <nav className="bottom-nav">
         {TABS.map((t) => (
           <button
