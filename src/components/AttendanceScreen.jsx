@@ -17,13 +17,17 @@ export default function AttendanceScreen({ trainingId, onBack }) {
   const team = teams.find((t) => t.id === training?.teamId);
   const players = team?.players ?? [];
 
-  const [records, setRecords] = useState(() => {
-    const att = getAttendance(trainingId);
-    return att.records;
-  });
+  const [records, setRecords] = useState([]);
 
   useEffect(() => {
-    setAttendance(trainingId, records);
+    getAttendance(trainingId).then((rows) => {
+      setRecords(rows.map((r) => ({ playerId: r.playerId, status: r.status })));
+    }).catch(console.error);
+  }, [trainingId, getAttendance]);
+
+  useEffect(() => {
+    if (records.length === 0) return;
+    setAttendance(trainingId, records).catch(console.error);
   }, [records, trainingId, setAttendance]);
 
   function getStatus(playerId) {
