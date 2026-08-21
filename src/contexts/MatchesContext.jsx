@@ -1,34 +1,41 @@
 // volley-coach/src/contexts/MatchesContext.jsx
-import { createContext, useContext } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 
 const MatchesContext = createContext(null);
 
 export function MatchesProvider({ children }) {
-  const [matches, setMatches] = useLocalStorage('vc_matches', []);
+  const [matches, setMatches] = useState([]);
 
-  function addMatch(match) {
-    setMatches((prev) => [
-      ...prev,
-      {
-        ...match,
-        id: crypto.randomUUID(),
-        sets: [],
-        notes: '',
-        courtLineup: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
-        liveStats: {},
-      },
-    ]);
-  }
+  useEffect(() => {
+    api.get('/api/matches').then(setMatches).catch(console.error);
+  }, []);
 
-  function updateMatch(id, updater) {
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...updater(m) } : m))
-    );
-  }
+  const addMatch = useCallback(async (match) => {
+    const created = await api.post('/api/matches', match);
+    setMatches((prev) => [created, ...prev]);
+    return created;
+  }, []);
+
+  const updateMatch = useCallback(async (id, updater) => {
+    setMatches((prev) => {
+      const match = prev.find((m) => m.id === id);
+      if (!match) return prev;
+      const updates = typeof updater === 'function' ? updater(match) : updater;
+      const updated = { ...match, ...updates };
+      // Async API sync — fire and forget, UI updates immediately
+      api.put(`/api/matches/${id}`, updates).catch(console.error);
+      return prev.map((m) => (m.id === id ? updated : m));
+    });
+  }, []);
+
+  const deleteMatch = useCallback(async (id) => {
+    await api.del(`/api/matches/${id}`);
+    setMatches((prev) => prev.filter((m) => m.id !== id));
+  }, []);
 
   return (
-    <MatchesContext.Provider value={{ matches, addMatch, updateMatch }}>
+    <MatchesContext.Provider value={{ matches, addMatch, updateMatch, deleteMatch }}>
       {children}
     </MatchesContext.Provider>
   );
