@@ -1,29 +1,57 @@
-// volley-coach/src/contexts/TeamsContext.jsx
-import { createContext, useContext } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { SEED_TEAMS } from '../data/seedData';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 
 const TeamsContext = createContext(null);
 
 export function TeamsProvider({ children }) {
-  const [teams, setTeams] = useLocalStorage('vc_teams', SEED_TEAMS);
+  const [teams, setTeams] = useState([]);
 
-  function addTeam(name) {
-    setTeams((prev) => [...prev, { id: crypto.randomUUID(), name, players: [] }]);
-  }
+  useEffect(() => {
+    api.get('/api/teams').then(setTeams).catch(console.error);
+  }, []);
 
-  function addPlayer(teamId, player) {
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? { ...t, players: [...t.players, { ...player, id: crypto.randomUUID() }] }
-          : t
-      )
-    );
-  }
+  const addTeam = useCallback(async (name) => {
+    const created = await api.post('/api/teams', { name });
+    setTeams((prev) => [...prev, created]);
+    return created;
+  }, []);
+
+  const updateTeam = useCallback(async (id, name) => {
+    const updated = await api.put(`/api/teams/${id}`, { name });
+    setTeams((prev) => prev.map((t) => (t.id === id ? { ...t, name: updated.name } : t)));
+  }, []);
+
+  const deleteTeam = useCallback(async (id) => {
+    await api.del(`/api/teams/${id}`);
+    setTeams((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addPlayer = useCallback(async (teamId, player) => {
+    const created = await api.post(`/api/teams/${teamId}/players`, player);
+    setTeams((prev) => prev.map((t) =>
+      t.id === teamId ? { ...t, players: [...(t.players ?? []), created] } : t
+    ));
+    return created;
+  }, []);
+
+  const updatePlayer = useCallback(async (teamId, playerId, player) => {
+    const updated = await api.put(`/api/teams/${teamId}/players/${playerId}`, player);
+    setTeams((prev) => prev.map((t) =>
+      t.id === teamId
+        ? { ...t, players: t.players.map((p) => (p.id === playerId ? updated : p)) }
+        : t
+    ));
+  }, []);
+
+  const deletePlayer = useCallback(async (teamId, playerId) => {
+    await api.del(`/api/teams/${teamId}/players/${playerId}`);
+    setTeams((prev) => prev.map((t) =>
+      t.id === teamId ? { ...t, players: t.players.filter((p) => p.id !== playerId) } : t
+    ));
+  }, []);
 
   return (
-    <TeamsContext.Provider value={{ teams, addTeam, addPlayer }}>
+    <TeamsContext.Provider value={{ teams, addTeam, updateTeam, deleteTeam, addPlayer, updatePlayer, deletePlayer }}>
       {children}
     </TeamsContext.Provider>
   );
