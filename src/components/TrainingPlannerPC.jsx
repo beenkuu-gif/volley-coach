@@ -121,7 +121,63 @@ export default function TrainingPlannerPC() {
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name ?? '— brak drużyny —';
   const drillName = (id) => drills.find((d) => d.id === id)?.name ?? id;
+  const drillFull = (id) => drills.find((d) => d.id === id);
   const totalBlockMin = (blks) => blks.reduce((s, b) => s + (b.durationMin || 0), 0);
+
+  function printTraining(t) {
+    const team = teamName(t.teamId);
+    const total = totalBlockMin(t.blocks ?? []);
+    const blocksHtml = (t.blocks ?? []).map((block, i) => {
+      const drillsHtml = (block.drills ?? []).map((d) => {
+        const drill = drillFull(d.drillId);
+        return `
+          <div class="drill-row">
+            <div class="drill-name">${drill ? drill.name : d.drillId}</div>
+            ${drill?.description ? `<div class="drill-desc">${drill.description}</div>` : ''}
+            ${drill?.tips ? `<div class="drill-tips"><strong>Wskazówki:</strong> ${drill.tips}</div>` : ''}
+          </div>`;
+      }).join('');
+      return `
+        <div class="block">
+          <div class="block-header">
+            <span class="block-name">${block.name || `Blok ${i + 1}`}</span>
+            <span class="block-time">${block.durationMin} min</span>
+          </div>
+          ${drillsHtml || '<div class="no-drills">Brak ćwiczeń</div>'}
+        </div>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html lang="pl"><head>
+<meta charset="UTF-8"><title>Plan treningu – ${team} – ${t.date}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Arial, sans-serif; font-size: 13px; color: #111; padding: 28px 32px; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .meta { color: #555; font-size: 13px; margin-bottom: 24px; }
+  .block { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 14px; overflow: hidden; page-break-inside: avoid; }
+  .block-header { display: flex; justify-content: space-between; align-items: center; background: #f3f4f6; padding: 10px 14px; }
+  .block-name { font-weight: 700; font-size: 14px; }
+  .block-time { font-size: 12px; color: #666; font-weight: 600; }
+  .drill-row { padding: 9px 14px; border-top: 1px solid #eee; }
+  .drill-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .drill-desc { font-size: 12px; color: #444; margin-top: 3px; line-height: 1.45; }
+  .drill-tips { font-size: 11px; color: #666; margin-top: 3px; font-style: italic; }
+  .no-drills { padding: 8px 14px; color: #999; font-size: 12px; border-top: 1px solid #eee; }
+  .footer { margin-top: 20px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+  @media print { body { padding: 16px 20px; } }
+</style></head><body>
+<h1>${team}</h1>
+<div class="meta">${t.date}${t.venue ? ` &nbsp;·&nbsp; ${t.venue}` : ''} &nbsp;·&nbsp; łącznie <strong>${total} min</strong></div>
+${blocksHtml}
+<div class="footer">Wydrukowano z Volley Coach &nbsp;·&nbsp; ${new Date().toLocaleDateString('pl-PL')}</div>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
+  }
   const selectedTraining = trainings.find((t) => t.id === selectedId);
   const sortedTrainings = [...trainings].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -347,10 +403,16 @@ export default function TrainingPlannerPC() {
           {/* ── DETAIL MODE ── */}
           {mode === 'detail' && selectedTraining && (
             <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px' }}>
-              <button onClick={() => setMode('history')}
-                style={{ border: 'none', background: 'none', color: '#a5b4fc', cursor: 'pointer', fontSize: 13, marginBottom: 16, padding: 0 }}>
-                ← Wróć do historii
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <button onClick={() => setMode('history')}
+                  style={{ border: 'none', background: 'none', color: '#a5b4fc', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+                  ← Wróć do historii
+                </button>
+                <button onClick={() => printTraining(selectedTraining)}
+                  style={{ border: '1px solid rgba(255,255,255,.15)', background: 'rgba(255,255,255,.07)', color: '#e2e8f0', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  🖨️ Drukuj
+                </button>
+              </div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: '#fff', fontWeight: 800, fontSize: 18 }}>{teamName(selectedTraining.teamId)}</div>
                 <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 13, marginTop: 4 }}>
