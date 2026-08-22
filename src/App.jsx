@@ -8,10 +8,12 @@ import { MatchesProvider } from './contexts/MatchesContext.jsx';
 import DrillsScreen from './components/DrillsScreen.jsx';
 import TeamsScreen from './components/TeamsScreen.jsx';
 import TrainingList from './components/TrainingList.jsx';
+import TrainingPlannerPC from './components/TrainingPlannerPC.jsx';
 import MatchesScreen from './components/MatchesScreen.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import Layout from './components/Layout.jsx';
+import { useMediaQuery } from './hooks/useMediaQuery.js';
 
 
 export default function App() {
@@ -42,6 +44,7 @@ export default function App() {
 
 function AuthenticatedApp({ user, logout }) {
   const [nav, setNav] = useState({ tab: 'drills', subScreen: null, params: {} });
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   function navigate(tab, subScreen = null, params = {}) {
     setNav({ tab, subScreen, params });
@@ -51,7 +54,7 @@ function AuthenticatedApp({ user, logout }) {
     const props = { nav, navigate };
     switch (nav.tab) {
       case 'drills':     return <DrillsScreen {...props} />;
-      case 'trainings':  return <TrainingList {...props} />;
+      case 'trainings':  return isDesktop ? <TrainingPlannerPC /> : <TrainingList {...props} />;
       case 'matches':    return <MatchesScreen {...props} />;
       case 'attendance': return <TrainingList />;
       case 'teams':      return <TeamsScreen {...props} />;
