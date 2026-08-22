@@ -105,7 +105,7 @@ function TrainingBlock({ block, onUpdate, onRemove, onAddDrill, onRemoveDrill, o
 export default function TrainingPlannerPC() {
   const { drills } = useDrills();
   const { teams } = useTeams();
-  const { addTraining } = useTrainings();
+  const { trainings, addTraining } = useTrainings();
 
   const [teamId, setTeamId]   = useState('');
   const [date, setDate]       = useState(new Date().toISOString().slice(0, 10));
@@ -116,6 +116,14 @@ export default function TrainingPlannerPC() {
   const [activeBlockId, setActiveBlockId] = useState(null);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
+  const [mode, setMode]       = useState('planner'); // 'planner' | 'history' | 'detail'
+  const [selectedId, setSelectedId] = useState(null);
+
+  const teamName = (id) => teams.find((t) => t.id === id)?.name ?? '— brak drużyny —';
+  const drillName = (id) => drills.find((d) => d.id === id)?.name ?? id;
+  const totalBlockMin = (blks) => blks.reduce((s, b) => s + (b.durationMin || 0), 0);
+  const selectedTraining = trainings.find((t) => t.id === selectedId);
+  const sortedTrainings = [...trainings].sort((a, b) => b.date.localeCompare(a.date));
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -232,70 +240,142 @@ export default function TrainingPlannerPC() {
           </div>
         </div>
 
-        {/* RIGHT: planner */}
+        {/* RIGHT: planner / history */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Header fields */}
-          <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select value={teamId} onChange={(e) => setTeamId(e.target.value)}
-              style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}>
-              <option value="" style={{ background: '#1e293b' }}>— Drużyna —</option>
-              {teams.map((t) => <option key={t.id} value={t.id} style={{ background: '#1e293b' }}>{t.name}</option>)}
-            </select>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}
-            />
-            <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Hala / miejsce..."
-              style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}
-            />
+          {/* Tab switcher */}
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: 6 }}>
+            {[['planner', '✏️ Kreator'], ['history', '📋 Historia']].map(([id, label]) => (
+              <button key={id} onClick={() => { setMode(id); setSelectedId(null); }}
+                style={{
+                  padding: '7px 16px', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  background: mode === id || (mode === 'detail' && id === 'history') ? 'rgba(99,102,241,.35)' : 'rgba(255,255,255,.06)',
+                  color: mode === id || (mode === 'detail' && id === 'history') ? '#a5b4fc' : 'rgba(255,255,255,.45)',
+                }}>
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Blocks */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '14px 18px' }}>
-            {blocks.length === 0 && (
-              <div style={{ textAlign: 'center', marginTop: 48 }}>
-                <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 14, marginBottom: 16 }}>Brak bloków treningowych</div>
-                <button onClick={addBlock} style={{ background: 'rgba(99,102,241,.2)', border: '1px solid rgba(99,102,241,.4)', borderRadius: 10, padding: '10px 20px', color: '#a5b4fc', cursor: 'pointer', fontWeight: 700 }}>
-                  + Dodaj pierwszy blok
+          {/* ── PLANNER MODE ── */}
+          {mode === 'planner' && (<>
+            <div style={{ padding: '12px 18px 10px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <select value={teamId} onChange={(e) => setTeamId(e.target.value)}
+                style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}>
+                <option value="" style={{ background: '#1e293b' }}>— Drużyna —</option>
+                {teams.map((t) => <option key={t.id} value={t.id} style={{ background: '#1e293b' }}>{t.name}</option>)}
+              </select>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+              <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Hala / miejsce..."
+                style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: '14px 18px' }}>
+              {blocks.length === 0 && (
+                <div style={{ textAlign: 'center', marginTop: 48 }}>
+                  <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 14, marginBottom: 16 }}>Brak bloków treningowych</div>
+                  <button onClick={addBlock} style={{ background: 'rgba(99,102,241,.2)', border: '1px solid rgba(99,102,241,.4)', borderRadius: 10, padding: '10px 20px', color: '#a5b4fc', cursor: 'pointer', fontWeight: 700 }}>
+                    + Dodaj pierwszy blok
+                  </button>
+                </div>
+              )}
+              {blocks.map((block) => (
+                <div key={block.id} onClick={() => setActiveBlockId(block.id)}
+                  style={{ outline: activeBlockId === block.id ? '2px solid rgba(99,102,241,.4)' : 'none', borderRadius: 14 }}>
+                  <TrainingBlock block={block} onUpdate={(u) => updateBlock(block.id, u)}
+                    onRemove={() => removeBlock(block.id)} onRemoveDrill={removeDrillFromBlock} />
+                </div>
+              ))}
+              {blocks.length > 0 && (
+                <button onClick={addBlock} style={{ width: '100%', padding: '10px', border: '1px dashed rgba(255,255,255,.15)', borderRadius: 10, background: 'transparent', color: 'rgba(255,255,255,.3)', cursor: 'pointer', fontSize: 13 }}>
+                  + Dodaj blok
+                </button>
+              )}
+            </div>
+
+            <div style={{ padding: '12px 18px 16px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>
+                Łączny czas: <strong style={{ color: '#fff' }}>{totalMin} min</strong>
+                {' · '}
+                {blocks.length} {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : 'bloków'}
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                {saved && <span style={{ color: '#34d399', fontSize: 13 }}>✓ Zapisano!</span>}
+                <button onClick={handleSave} disabled={saving || !date}
+                  style={{
+                    padding: '10px 22px', border: 'none', borderRadius: 10, cursor: saving || !date ? 'not-allowed' : 'pointer',
+                    background: saving || !date ? 'rgba(79,70,229,.4)' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                    color: '#fff', fontWeight: 700, fontSize: 14,
+                  }}>
+                  {saving ? 'Zapisywanie...' : '💾 Zapisz trening'}
                 </button>
               </div>
-            )}
-            {blocks.map((block) => (
-              <div key={block.id} onClick={() => setActiveBlockId(block.id)}
-                style={{ outline: activeBlockId === block.id ? '2px solid rgba(99,102,241,.4)' : 'none', borderRadius: 14 }}>
-                <TrainingBlock
-                  block={block}
-                  onUpdate={(u) => updateBlock(block.id, u)}
-                  onRemove={() => removeBlock(block.id)}
-                  onRemoveDrill={removeDrillFromBlock}
-                />
-              </div>
-            ))}
-            {blocks.length > 0 && (
-              <button onClick={addBlock} style={{ width: '100%', padding: '10px', border: '1px dashed rgba(255,255,255,.15)', borderRadius: 10, background: 'transparent', color: 'rgba(255,255,255,.3)', cursor: 'pointer', fontSize: 13 }}>
-                + Dodaj blok
-              </button>
-            )}
-          </div>
+            </div>
+          </>)}
 
-          {/* Footer */}
-          <div style={{ padding: '12px 18px 16px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>
-              Łączny czas: <strong style={{ color: '#fff' }}>{totalMin} min</strong>
-              {' · '}
-              {blocks.length} {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : 'bloków'}
+          {/* ── HISTORY LIST MODE ── */}
+          {mode === 'history' && (
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px' }}>
+              {sortedTrainings.length === 0 && (
+                <div style={{ textAlign: 'center', marginTop: 60, color: 'rgba(255,255,255,.25)', fontSize: 14 }}>
+                  Brak zapisanych treningów.<br />
+                  <span style={{ fontSize: 12, marginTop: 8, display: 'block' }}>Zaplanuj pierwszy w zakładce Kreator.</span>
+                </div>
+              )}
+              {sortedTrainings.map((t) => (
+                <div key={t.id} onClick={() => { setSelectedId(t.id); setMode('detail'); }}
+                  style={{ background: 'rgba(255,255,255,.05)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, cursor: 'pointer', border: '1px solid rgba(255,255,255,.07)', transition: 'background .15s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.09)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.05)'}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{teamName(t.teamId)}</div>
+                      <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 12, marginTop: 3 }}>
+                        {t.date}{t.venue ? ` · ${t.venue}` : ''}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: 12, color: 'rgba(255,255,255,.35)' }}>
+                      <div>{t.blocks?.length ?? 0} bloków</div>
+                      <div>{totalBlockMin(t.blocks ?? [])} min</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              {saved && <span style={{ color: '#34d399', fontSize: 13 }}>✓ Zapisano!</span>}
-              <button onClick={handleSave} disabled={saving || !date}
-                style={{
-                  padding: '10px 22px', border: 'none', borderRadius: 10, cursor: saving || !date ? 'not-allowed' : 'pointer',
-                  background: saving || !date ? 'rgba(79,70,229,.4)' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                  color: '#fff', fontWeight: 700, fontSize: 14,
-                }}>
-                {saving ? 'Zapisywanie...' : '💾 Zapisz trening'}
+          )}
+
+          {/* ── DETAIL MODE ── */}
+          {mode === 'detail' && selectedTraining && (
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px' }}>
+              <button onClick={() => setMode('history')}
+                style={{ border: 'none', background: 'none', color: '#a5b4fc', cursor: 'pointer', fontSize: 13, marginBottom: 16, padding: 0 }}>
+                ← Wróć do historii
               </button>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: 18 }}>{teamName(selectedTraining.teamId)}</div>
+                <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 13, marginTop: 4 }}>
+                  {selectedTraining.date}{selectedTraining.venue ? ` · ${selectedTraining.venue}` : ''}
+                  {' · '}łącznie {totalBlockMin(selectedTraining.blocks ?? [])} min
+                </div>
+              </div>
+              {(selectedTraining.blocks ?? []).map((block, i) => (
+                <div key={block.id ?? i} style={{ background: 'rgba(255,255,255,.05)', borderRadius: 12, padding: '12px 14px', marginBottom: 10, border: '1px solid rgba(255,255,255,.07)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{block.name || `Blok ${i + 1}`}</span>
+                    <span style={{ color: 'rgba(255,255,255,.35)', fontSize: 12 }}>{block.durationMin} min</span>
+                  </div>
+                  {(block.drills ?? []).length === 0
+                    ? <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 12 }}>Brak ćwiczeń</div>
+                    : (block.drills ?? []).map((d, j) => (
+                      <div key={d.id ?? j} style={{ fontSize: 13, color: '#cbd5e1', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                        {drillName(d.drillId)}
+                      </div>
+                    ))
+                  }
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </DndContext>
