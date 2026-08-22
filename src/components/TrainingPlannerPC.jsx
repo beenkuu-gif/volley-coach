@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
@@ -136,6 +135,7 @@ export default function TrainingPlannerPC() {
 
   function removeBlock(blockId) {
     setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+    setActiveBlockId((prev) => prev === blockId ? null : prev);
   }
 
   function addDrillToBlock(blockId, drill) {
@@ -266,7 +266,6 @@ export default function TrainingPlannerPC() {
                   block={block}
                   onUpdate={(u) => updateBlock(block.id, u)}
                   onRemove={() => removeBlock(block.id)}
-                  onAddDrill={addDrillToBlock}
                   onRemoveDrill={removeDrillFromBlock}
                 />
               </div>
