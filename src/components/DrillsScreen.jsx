@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useDrills } from '../contexts/DrillsContext';
 import BottomSheet from './BottomSheet';
 
-const CATEGORIES = ['Wszystkie', 'Rozgrzewka', 'Zagrywka', 'Przyjęcie', 'Atak', 'Blok', 'Obrona', 'Gra', 'Siłownia'];
+const CATEGORIES = ['Wszystkie', 'Rozgrzewka', 'Zagrywka', 'Przyjęcie', 'Atak', 'Blok', 'Obrona', 'Gra', 'Ustawienia', 'Siłownia'];
 
 export default function DrillsScreen() {
   const { drills, addDrill } = useDrills();

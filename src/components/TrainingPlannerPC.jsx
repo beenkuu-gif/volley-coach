@@ -17,7 +17,7 @@ import { useDrills } from '../contexts/DrillsContext';
 import { useTeams } from '../contexts/TeamsContext';
 import { useTrainings } from '../contexts/TrainingsContext';
 
-const CATEGORIES = ['Rozgrzewka','Zagrywka','Przyjęcie','Atak','Blok','Obrona','Gra','Siłownia'];
+const CATEGORIES = ['Rozgrzewka','Zagrywka','Przyjęcie','Atak','Blok','Obrona','Gra','Ustawienia','Siłownia'];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);

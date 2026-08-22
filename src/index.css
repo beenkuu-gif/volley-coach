@@ -24,6 +24,7 @@
   --cat-blok:       #10b981;
   --cat-obrona:     #06b6d4;
   --cat-gra:        #4f46e5;
+  --cat-ustawienia: #0d9488;
   --cat-silownia:   #6b7280;
 }
 
@@ -89,6 +90,7 @@ body {
 .badge-Blok       { background: var(--cat-blok); }
 .badge-Obrona     { background: var(--cat-obrona); }
 .badge-Gra        { background: var(--cat-gra); }
+.badge-Ustawienia { background: var(--cat-ustawienia); }
 .badge-Siłownia   { background: var(--cat-silownia); }
 
 /* Form elements */
