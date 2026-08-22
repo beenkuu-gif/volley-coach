@@ -1,6 +1,10 @@
 // volley-coach/src/App.jsx
 import { useState } from 'react';
 import { useAuth } from './contexts/AuthContext.jsx';
+import { DrillsProvider } from './contexts/DrillsContext.jsx';
+import { TeamsProvider } from './contexts/TeamsContext.jsx';
+import { TrainingsProvider } from './contexts/TrainingsContext.jsx';
+import { MatchesProvider } from './contexts/MatchesContext.jsx';
 import DrillsScreen from './components/DrillsScreen.jsx';
 import TeamsScreen from './components/TeamsScreen.jsx';
 import TrainingList from './components/TrainingList.jsx';
@@ -22,7 +26,6 @@ const BASE_TABS = [
 
 export default function App() {
   const { user, logout, loading } = useAuth();
-  const [nav, setNav] = useState({ tab: 'drills', subScreen: null, params: {} });
 
   if (loading) {
     return (
@@ -33,6 +36,22 @@ export default function App() {
   }
 
   if (!user) return <LoginPage />;
+
+  return (
+    <DrillsProvider>
+      <TeamsProvider>
+        <TrainingsProvider>
+          <MatchesProvider>
+            <AuthenticatedApp user={user} logout={logout} />
+          </MatchesProvider>
+        </TrainingsProvider>
+      </TeamsProvider>
+    </DrillsProvider>
+  );
+}
+
+function AuthenticatedApp({ user, logout }) {
+  const [nav, setNav] = useState({ tab: 'drills', subScreen: null, params: {} });
 
   const TABS = [
     ...BASE_TABS,
