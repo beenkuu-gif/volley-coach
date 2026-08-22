@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTrainings } from '../contexts/TrainingsContext';
 import { useTeams } from '../contexts/TeamsContext';
 import { useDrills } from '../contexts/DrillsContext';
+import { printTraining } from '../utils/printTraining';
 import TrainingCreator from './TrainingCreator';
 import AttendanceScreen from './AttendanceScreen';
 
@@ -15,7 +16,9 @@ export default function TrainingList() {
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name ?? '—';
   const totalMin = (blocks) => blocks.reduce((s, b) => s + (b.durationMin || 0), 0);
-  const drillName = (id) => drills.find((d) => d.id === id)?.name ?? id;
+  const drillFull = (id) => drills.find((d) => d.id === id);
+  const drillName = (id) => drillFull(id)?.name ?? id;
+  const doPrint = (t) => printTraining(t, { teamName, drillFull, totalBlockMin: totalMin });
 
   const selected = trainings.find((t) => t.id === selectedId);
 
@@ -32,7 +35,10 @@ export default function TrainingList() {
       <div className="screen">
         <div className="top-bar" style={{ marginBottom: 12 }}>
           <button className="btn btn-ghost btn-sm" onClick={() => setView('list')}>← Treningi</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setView('attendance')}>Obecności</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => doPrint(selected)}>🖨️ Drukuj</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setView('attendance')}>Obecności</button>
+          </div>
         </div>
         <h1 style={{ fontSize: 18, fontWeight: 700 }}>{teamName(selected.teamId)}</h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 4 }}>{selected.date} · {selected.venue || 'brak hali'}</p>
