@@ -16,6 +16,11 @@
   --shadow-card:        0 1px 3px rgba(0,0,0,.08);
   --bottom-nav-height:  64px;
 
+  /* Difficulty badge colors */
+  --diff-podstawowe:          #16a34a;
+  --diff-srednie:             #d97706;
+  --diff-zaawansowane:        #dc2626;
+
   /* Category badge colors */
   --cat-rozgrzewka: #f59e0b;
   --cat-zagrywka:   #ef4444;
@@ -92,6 +97,15 @@ body {
 .badge-Gra        { background: var(--cat-gra); }
 .badge-Ustawienia { background: var(--cat-ustawienia); }
 .badge-Siłownia   { background: var(--cat-silownia); }
+
+/* Difficulty badges */
+.diff-badge {
+  display: inline-block; padding: 2px 7px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.diff-podstawowe    { background: var(--diff-podstawowe); }
+.diff-srednie       { background: var(--diff-srednie); }
+.diff-zaawansowane  { background: var(--diff-zaawansowane); }
 
 /* Form elements */
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }

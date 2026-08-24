@@ -3,27 +3,42 @@ import { useState } from 'react';
 import { useDrills } from '../contexts/DrillsContext';
 import BottomSheet from './BottomSheet';
 
-const CATEGORIES = ['Wszystkie', 'Rozgrzewka', 'Zagrywka', 'Przyjęcie', 'Atak', 'Blok', 'Obrona', 'Gra', 'Ustawienia', 'Siłownia'];
+const CATEGORIES   = ['Wszystkie', 'Rozgrzewka', 'Zagrywka', 'Przyjęcie', 'Atak', 'Blok', 'Obrona', 'Gra', 'Ustawienia', 'Siłownia'];
+const DIFFICULTIES = ['Wszystkie', 'podstawowe', 'średnio zaawansowane', 'zaawansowane'];
+
+const DIFF_LABEL = {
+  'podstawowe':          '🟢 Podstawowe',
+  'średnio zaawansowane':'🟡 Średnio zaawansowane',
+  'zaawansowane':        '🔴 Zaawansowane',
+};
+
+function diffClass(d) {
+  if (d === 'zaawansowane')        return 'diff-badge diff-zaawansowane';
+  if (d === 'średnio zaawansowane') return 'diff-badge diff-srednie';
+  return 'diff-badge diff-podstawowe';
+}
 
 export default function DrillsScreen() {
   const { drills, addDrill } = useDrills();
-  const [activeCategory, setActiveCategory] = useState('Wszystkie');
-  const [search, setSearch] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
+  const [activeCategory,   setActiveCategory]   = useState('Wszystkie');
+  const [activeDifficulty, setActiveDifficulty] = useState('Wszystkie');
+  const [search,    setSearch]    = useState('');
+  const [showAdd,   setShowAdd]   = useState(false);
   const [selectedDrill, setSelectedDrill] = useState(null);
-  const [form, setForm] = useState({ name: '', category: 'Rozgrzewka', description: '', tips: '' });
+  const [form, setForm] = useState({ name: '', category: 'Rozgrzewka', difficulty: 'podstawowe', description: '', tips: '' });
 
   const filtered = drills.filter((d) => {
-    const matchCat = activeCategory === 'Wszystkie' || d.category === activeCategory;
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
+    if (activeCategory   !== 'Wszystkie' && d.category   !== activeCategory)   return false;
+    if (activeDifficulty !== 'Wszystkie' && d.difficulty !== activeDifficulty) return false;
+    if (search && !d.name.toLowerCase().includes(search.toLowerCase()))        return false;
+    return true;
   });
 
   function handleAdd(e) {
     e.preventDefault();
     if (!form.name.trim()) return;
     addDrill(form);
-    setForm({ name: '', category: 'Rozgrzewka', description: '', tips: '' });
+    setForm({ name: '', category: 'Rozgrzewka', difficulty: 'podstawowe', description: '', tips: '' });
     setShowAdd(false);
   }
 
@@ -42,10 +57,24 @@ export default function DrillsScreen() {
         />
       </div>
 
+      {/* Category chips */}
       <div className="chip-row">
         {CATEGORIES.map((c) => (
           <button key={c} className={`chip ${activeCategory === c ? 'active' : ''}`} onClick={() => setActiveCategory(c)}>{c}</button>
         ))}
+      </div>
+
+      {/* Difficulty chips */}
+      <div className="chip-row" style={{ paddingTop: 0 }}>
+        {DIFFICULTIES.map((d) => (
+          <button key={d} className={`chip ${activeDifficulty === d ? 'active' : ''}`} onClick={() => setActiveDifficulty(d)}>
+            {d === 'Wszystkie' ? 'Wszystkie poziomy' : DIFF_LABEL[d] ?? d}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: '0 16px 4px 16px', color: 'var(--color-text-muted)', fontSize: 12 }}>
+        {filtered.length} {filtered.length === 1 ? 'ćwiczenie' : 'ćwiczeń'}
       </div>
 
       <div style={{ padding: '0 16px 16px' }}>
@@ -57,10 +86,13 @@ export default function DrillsScreen() {
             onClick={() => setSelectedDrill(d)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
               <span style={{ fontWeight: 600 }}>{d.name}</span>
-              <span className={`badge badge-${d.category}`}>{d.category}</span>
+              <div style={{ display: 'flex', gap: 4, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <span className={diffClass(d.difficulty)}>{d.difficulty ?? 'podstawowe'}</span>
+                <span className={`badge badge-${d.category}`}>{d.category}</span>
+              </div>
             </div>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginTop: 4 }}>
-              {d.description.slice(0, 70)}{d.description.length > 70 ? '…' : ''}
+              {d.description?.slice(0, 70)}{(d.description?.length ?? 0) > 70 ? '…' : ''}
             </p>
           </div>
         ))}
@@ -70,7 +102,10 @@ export default function DrillsScreen() {
       <BottomSheet isOpen={!!selectedDrill} onClose={() => setSelectedDrill(null)} title={selectedDrill?.name ?? ''}>
         {selectedDrill && (
           <>
-            <span className={`badge badge-${selectedDrill.category}`} style={{ marginBottom: 14, display: 'inline-block' }}>{selectedDrill.category}</span>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              <span className={diffClass(selectedDrill.difficulty)}>{selectedDrill.difficulty ?? 'podstawowe'}</span>
+              <span className={`badge badge-${selectedDrill.category}`}>{selectedDrill.category}</span>
+            </div>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 6 }}>Opis</h3>
             <p style={{ marginBottom: 16, lineHeight: 1.6 }}>{selectedDrill.description}</p>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 6 }}>Wskazówki dla trenera</h3>
@@ -90,6 +125,14 @@ export default function DrillsScreen() {
             <label>Kategoria</label>
             <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
               {CATEGORIES.filter((c) => c !== 'Wszystkie').map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Poziom trudności</label>
+            <select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })}>
+              <option value="podstawowe">🟢 Podstawowe</option>
+              <option value="średnio zaawansowane">🟡 Średnio zaawansowane</option>
+              <option value="zaawansowane">🔴 Zaawansowane</option>
             </select>
           </div>
           <div className="form-group">

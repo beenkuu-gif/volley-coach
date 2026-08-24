@@ -24,17 +24,24 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+const DIFF_DOT = { 'podstawowe': '🟢', 'średnio zaawansowane': '🟡', 'zaawansowane': '🔴' };
+
 // Drill item in the left panel
 function DrillLibraryItem({ drill, onAdd }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,.04)',
-      marginBottom: 4,
+      marginBottom: 4, gap: 6,
     }}>
-      <span style={{ color: '#e2e8f0', fontSize: 13 }}>{drill.name}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: '#e2e8f0', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{drill.name}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', marginTop: 1 }}>
+          {DIFF_DOT[drill.difficulty] ?? '🟢'} {drill.difficulty ?? 'podstawowe'}
+        </div>
+      </div>
       <button onClick={() => onAdd(drill)} style={{
-        border: 'none', background: 'rgba(99,102,241,.25)', color: '#a5b4fc',
+        flexShrink: 0, border: 'none', background: 'rgba(99,102,241,.25)', color: '#a5b4fc',
         borderRadius: 6, padding: '3px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700,
       }}>+</button>
     </div>
