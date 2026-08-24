@@ -188,11 +188,17 @@ function Row({ label, value }) {
   );
 }
 
+const DRILL_CATEGORIES = ['Rozgrzewka','Zagrywka','Przyjęcie','Atak','Blok','Obrona','Gra','Ustawienia','Siłownia'];
+const DIFF_DOT = { 'podstawowe': '🟢', 'średnio zaawansowane': '🟡', 'zaawansowane': '🔴' };
+const EMPTY_FORM = { name: '', category: 'Zagrywka', difficulty: 'podstawowe', description: '', tips: '' };
+
+const inputStyle = { width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' };
+
 function GlobalDrillsTab() {
   const [drills, setDrills] = useState([]);
-  const [form, setForm] = useState({ name: '', category: 'Zagrywka', description: '', tips: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
-  const CATEGORIES = ['Rozgrzewka','Zagrywka','Przyjęcie','Atak','Blok','Obrona','Gra','Siłownia'];
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     api.get('/api/drills').then((d) => setDrills(d.filter((x) => x.is_global)));
@@ -207,14 +213,22 @@ function GlobalDrillsTab() {
       const created = await api.post('/api/admin/drills', form);
       setDrills((prev) => [...prev, created]);
     }
-    setForm({ name: '', category: 'Zagrywka', description: '', tips: '' });
+    setForm(EMPTY_FORM);
     setEditId(null);
   }
 
+  function startEdit(d) {
+    setEditId(d.id);
+    setForm({ name: d.name, category: d.category, difficulty: d.difficulty ?? 'podstawowe', description: d.description ?? '', tips: d.tips ?? '' });
+  }
+
   async function remove(id) {
+    if (!window.confirm('Usunąć ćwiczenie z bazy globalnej?')) return;
     await api.del(`/api/admin/drills/${id}`);
     setDrills((prev) => prev.filter((d) => d.id !== id));
   }
+
+  const filtered = drills.filter((d) => !search || d.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div>
@@ -223,33 +237,36 @@ function GlobalDrillsTab() {
         <div style={{ color: '#fff', fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
           {editId ? 'Edytuj ćwiczenie' : 'Dodaj globalne ćwiczenie'}
         </div>
-        {[
-          { key: 'name', placeholder: 'Nazwa ćwiczenia', type: 'text' },
-          { key: 'description', placeholder: 'Opis', type: 'textarea' },
-          { key: 'tips', placeholder: 'Wskazówki dla trenera', type: 'textarea' },
-        ].map((f) => (
-          <div key={f.key} style={{ marginBottom: 8 }}>
-            {f.type === 'textarea' ? (
-              <textarea value={form[f.key]} onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
-                placeholder={f.placeholder} rows={2}
-                style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, fontSize: 13, color: '#fff', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
-            ) : (
-              <input value={form[f.key]} onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' }} />
-            )}
-          </div>
-        ))}
-        <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-          style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, fontSize: 13, color: '#fff', marginBottom: 8, outline: 'none' }}>
-          {CATEGORIES.map((c) => <option key={c} style={{ background: '#1e293b' }}>{c}</option>)}
-        </select>
+        <div style={{ marginBottom: 8 }}>
+          <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Nazwa ćwiczenia" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+            style={{ ...inputStyle, flex: 1 }}>
+            {DRILL_CATEGORIES.map((c) => <option key={c} style={{ background: '#1e293b' }}>{c}</option>)}
+          </select>
+          <select value={form.difficulty} onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value }))}
+            style={{ ...inputStyle, flex: 1 }}>
+            <option value="podstawowe" style={{ background: '#1e293b' }}>🟢 Podstawowe</option>
+            <option value="średnio zaawansowane" style={{ background: '#1e293b' }}>🟡 Średnio zaawansowane</option>
+            <option value="zaawansowane" style={{ background: '#1e293b' }}>🔴 Zaawansowane</option>
+          </select>
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            placeholder="Opis ćwiczenia" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <textarea value={form.tips} onChange={(e) => setForm((p) => ({ ...p, tips: e.target.value }))}
+            placeholder="Wskazówki dla trenera" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={save} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 8, background: '#4f46e5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
-            {editId ? 'Zapisz' : 'Dodaj'}
+            {editId ? 'Zapisz zmiany' : 'Dodaj ćwiczenie'}
           </button>
           {editId && (
-            <button onClick={() => { setEditId(null); setForm({ name: '', category: 'Zagrywka', description: '', tips: '' }); }}
+            <button onClick={() => { setEditId(null); setForm(EMPTY_FORM); }}
               style={{ padding: '10px 14px', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, background: 'none', color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>
               Anuluj
             </button>
@@ -257,17 +274,23 @@ function GlobalDrillsTab() {
         </div>
       </div>
 
-      {/* Drills list */}
-      <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>ĆWICZENIA GLOBALNE ({drills.length})</div>
+      {/* Search + list */}
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Szukaj w bazie..."
+        style={{ ...inputStyle, marginBottom: 10 }} />
+      <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>
+        ĆWICZENIA GLOBALNE ({filtered.length})
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {drills.map((d) => (
-          <div key={d.id} style={{ background: 'rgba(255,255,255,.05)', borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
+        {filtered.map((d) => (
+          <div key={d.id} style={{ background: 'rgba(255,255,255,.05)', borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{d.name}</div>
-              <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{d.category}</div>
+              <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>
+                {d.category} · {DIFF_DOT[d.difficulty] ?? '🟢'} {d.difficulty ?? 'podstawowe'}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => { setEditId(d.id); setForm({ name: d.name, category: d.category, description: d.description ?? '', tips: d.tips ?? '' }); }}
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button onClick={() => startEdit(d)}
                 style={{ background: 'rgba(255,255,255,.08)', border: 'none', color: '#fff', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>✎</button>
               <button onClick={() => remove(d.id)}
                 style={{ background: 'rgba(239,68,68,.15)', border: 'none', color: '#f87171', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>✕</button>

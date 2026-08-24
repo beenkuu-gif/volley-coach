@@ -30,8 +30,14 @@ export function DrillsProvider({ children }) {
     setDrills((prev) => prev.filter((d) => d.id !== id));
   }, []);
 
+  const publishDrill = useCallback(async (id) => {
+    const updated = await api.post(`/api/drills/${id}/publish`, {});
+    setDrills((prev) => prev.map((d) => (d.id === id ? updated : d)));
+    return updated;
+  }, []);
+
   return (
-    <DrillsContext.Provider value={{ drills, addDrill, updateDrill, deleteDrill, loading }}>
+    <DrillsContext.Provider value={{ drills, addDrill, updateDrill, deleteDrill, publishDrill, loading }}>
       {children}
     </DrillsContext.Provider>
   );
